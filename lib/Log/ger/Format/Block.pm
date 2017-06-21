@@ -12,24 +12,35 @@ use Sub::Metadata qw(mutate_sub_prototype);
 sub PRIO_create_formatter_routine { 50 }
 
 sub create_formatter_routine {
-    my %args = @_;
+    my ($self, %args) = @_;
 
-    [sub {$_[0]->()}];
+    [sub { my $code = shift; $code->(@_) }];
 }
 
 sub PRIO_after_create_log_routine { 50 }
+
+sub after_create_log_routine {
+    my ($self, %args) = @_;
+
+    mutate_sub_prototype($args{log_routine},'&');
+    [];
+}
 
 sub import {
     my $self = shift;
 
     my $caller = caller(0);
 
-    Log::ger::Util::add_plugin_for_package($caller, 'create_formatter_routine');
-    Log::ger::Util::add_plugin_for_package($caller, 'after_create_log_routine');
+    Log::ger::Util::add_plugin_for_package(
+        $caller, 'create_formatter_routine', __PACKAGE__, 'replace');
+    Log::ger::Util::add_plugin_for_package(
+        $caller, 'after_create_log_routine', __PACKAGE__, 'replace');
 }
 
 1;
 # ABSTRACT: Use formatting using block instead of sprintf-style
+
+=for Pod::Coverage ^(.+)$
 
 =head1 SYNOPSIS
 
@@ -42,6 +53,7 @@ routines like C<log_warn> et al).
 
 After that, you can use your logging routine a la L<Log::Contextual>:
 
+ # the following block won't run if debug is off
  log_debug { "the new count in the database is " . $rs->count };
 
 
