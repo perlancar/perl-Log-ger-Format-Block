@@ -6,35 +6,39 @@ package Log::ger::Format::Block;
 use strict;
 use warnings;
 
-use Log::ger::Util;
 use Sub::Metadata qw(mutate_sub_prototype);
 
-sub PRIO_create_formatter_routine { 50 }
+sub get_hooks {
+    my %conf = @_;
 
-sub create_formatter_routine {
-    my ($self, %args) = @_;
+    return {
+        create_formatter => [
+            __PACKAGE__, 50,
+            sub {
+                [sub { my $code = shift; $code->(@_) }];
+            }],
 
-    [sub { my $code = shift; $code->(@_) }];
-}
+        before_install_routines => [
+            __PACKAGE__, 50,
+            sub {
+                no strict 'refs';
 
-sub PRIO_after_create_log_routine { 50 }
-
-sub after_create_log_routine {
-    my ($self, %args) = @_;
-
-    mutate_sub_prototype($args{log_routine},'&');
-    [];
-}
-
-sub import {
-    my $self = shift;
-
-    my $caller = caller(0);
-
-    Log::ger::Util::add_plugin_for_package(
-        $caller, 'create_formatter_routine', __PACKAGE__, 'replace');
-    Log::ger::Util::add_plugin_for_package(
-        $caller, 'after_create_log_routine', __PACKAGE__, 'replace');
+                my %args = @_;
+                for my $r (@{ $args{routines} }) {
+                    my ($coderef, $name, $flags) = @$r;
+                    next unless $flags & 1; # routine is a log_LEVEL routine
+                    # avoid prototype mismatch warning when redefining
+                    if ($args{target} eq 'package' ||
+                            $args{target} eq 'object') {
+                        if (defined ${"$args{target_arg}\::"}{$name}) {
+                            delete ${"$args{target_arg}\::"}{$name};
+                        }
+                    }
+                    mutate_sub_prototype($coderef, '&');
+                }
+                [1];
+            }],
+    };
 }
 
 1;
@@ -44,20 +48,23 @@ sub import {
 
 =head1 SYNOPSIS
 
- use Log::ger::Format::Block;
+ use Log::ger::Format 'Block';
  use Log::ger;
-
-Calling C<use Log::ger::OptAway> will affect only the current package. You
-should do this before C<use Log::err> (which will create and import the logging
-routines like C<log_warn> et al).
 
 After that, you can use your logging routine a la L<Log::Contextual>:
 
  # the following block won't run if debug is off
  log_debug { "the new count in the database is " . $rs->count };
 
+To install only for current package:
+
+ use Log::ger::Format;
+ Log::ger->set_for_current_package('Block');
+ use Log::ger;
+
 
 =head1 DESCRIPTION
+
 
 =head1 SEE ALSO
 
