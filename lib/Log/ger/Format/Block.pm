@@ -59,11 +59,13 @@ After that, you can use your logging routine a la L<Log::Contextual>:
 To install only for current package:
 
  use Log::ger::Format;
- Log::ger->set_for_current_package('Block');
+ BEGIN { Log::ger->set_for_current_package('Block') }
  use Log::ger;
 
 
 =head1 DESCRIPTION
+
+Caveat: you have to do this in the compile-time phase (like shown in Synopsis).
 
 
 =head1 SEE ALSO
