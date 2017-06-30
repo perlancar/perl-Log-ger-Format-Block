@@ -25,8 +25,8 @@ sub get_hooks {
 
                 my %args = @_;
                 for my $r (@{ $args{routines} }) {
-                    my ($coderef, $name, $flags) = @$r;
-                    next unless $flags & 1; # routine is a log_LEVEL routine
+                    my ($coderef, $name, $lnum, $type) = @$r;
+                    next unless $type =~ /\Alog_/;
                     # avoid prototype mismatch warning when redefining
                     if ($args{target} eq 'package' ||
                             $args{target} eq 'object') {
