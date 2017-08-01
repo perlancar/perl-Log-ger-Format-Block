@@ -51,16 +51,11 @@ sub get_hooks {
  use Log::ger::Format 'Block';
  use Log::ger;
 
-After that, you can use your logging routine a la L<Log::Contextual>:
+After that, you can use your logging routine a la L<Log::Contextual> in the
+importing package:
 
  # the following block won't run if debug is off
  log_debug { "the new count in the database is " . $rs->count };
-
-To install only for current package:
-
- use Log::ger::Format;
- BEGIN { Log::ger->set_for_current_package('Block') }
- use Log::ger;
 
 
 =head1 DESCRIPTION
